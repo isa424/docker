@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  database:
+    image: mysql:8.0
+    container_name: database
+    hostname: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpw
+      - MYSQL_DATABASE=project
+      - MYSQL_USER=user
+      - MYSQL_PASS=pass
+      - MYSQL_INITDB_SKIP_TZINFO=true
+    networks:
+      - mynet
+    ports:
+      - "33060:3306"
+    volumes:
+      - myvolume:/var/lib/mysql
+  backend:
+    image: isa424/backend
+    depends_on:
+      - database
+    container_name: backend
+    hostname: backend
+    networks:
+      - mynet
+    ports:
+      - "8080:8080"
+    environment:
+      - DBUSER=${DBUSER:-user}
+      - DBPASS=${DBPASS:-pass}
+      - DBHOST=${DBHOST:-mysql}
+      - DBPORT=${DBPORT:-3306}
+      - DBNAME=${DBNAME-project}
+    deploy:
+      restart_policy:
+        condition: on-failure
+  frontend:
+    image: isa424/frontend
+    depends_on:
+      - backend
+    container_name: frontend
+    hostname: frontend
+    networks:
+      - mynet
+    ports:
+      - "80:3000"
+    environment:
+      - NODE_ENV=production
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  myvolume:
+
+networks:
+  mynet:
+    driver: bridge
